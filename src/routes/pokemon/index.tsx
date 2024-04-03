@@ -48,7 +48,7 @@ export function Index({ className, ...props }: CardProps) {
                             </CardHeader>
                             <CardContent className="flex flex-col items-center justify-center">
                                 {pokemon.name}
-                                <Stats id={pokemon.url.split('/')[6]} labels={['January', 'February', 'March', 'April', 'May', 'June', 'July']} />
+                                <Stats id={pokemon.url.split('/')[6]} />
                             </CardContent>
                             <CardFooter>
                                 <Button className="w-full" variant="outline">
