@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { useStats } from './StatContext';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -8,8 +10,7 @@ import {
     Tooltip,
     Legend,
 } from 'chart.js/auto';
-import { stat } from 'fs';
-import { useEffect, useState } from 'react';
+
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -20,36 +21,61 @@ ChartJS.register(
     Legend
 );
 
-import { Line, Bar } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 
-type StatProps = {
-    id: string,
-    // labels: string[],
+type StatComponentProps = {
+    pokemonName: string,
 }
 
-type PokemonStats = {
-    stats: Stats[]
+export function Stat({ pokemonName }: StatComponentProps) {
+    return (
+        <StatContent pokemonName={pokemonName} />
+    );
 }
 
-type Stats = {
-    base_stat: number,
-    effort: number,
-    stat: { name: string, url: string }
-}
-
-export function Stats({ id }: StatProps) {
-    const [stats, setStats] = useState<PokemonStats | null>(null)
+function StatContent({ pokemonName }: StatComponentProps) {
+    const { stats, setStats } = useStats();
+    const [loading, setLoading] = useState(false)
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonName}/`);
+            const data = await response.json();
+            setStats(data);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const stats = async () => {
-            const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}/`)
-            const data = await response.json()
-            // console.log(data)
-            setStats(data)
+        if (!stats) {
+            loadData();
         }
+    }, []);
 
-        stats()
-    }, [])
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    if (!stats) {
+        return <div>Loading...</div>;
+    }
+    const statsValues = stats.stats.map((stat) => stat.base_stat);
+    const statsLabels = stats.stats.map((stat) => stat.stat.name);
+    const data = {
+        labels: statsLabels,
+        datasets: [
+            {
+                label: 'Base Stats',
+                data: statsValues,
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                borderWidth: 1,
+                borderColor: 'rgb(255, 99, 132)',
+            },
+        ],
+    };
 
     const options = {
         responsive: true,
@@ -81,32 +107,9 @@ export function Stats({ id }: StatProps) {
         }
     };
 
-
-    const pokemonStats = stats && stats.stats;
-    const statsValues = pokemonStats && pokemonStats.map((stat) => stat.base_stat)
-    const statsLabel = pokemonStats && pokemonStats.map((stat) => stat.stat.name)
-
-    const data = {
-        labels: statsLabel ?? [],
-        datasets: [
-            {
-                data: statsValues,
-                backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                borderWidth: 1,
-                borderColor: 'rgb(255, 99, 132)',
-            },
-        ],
-    };
-
-
     return (
         <div>
-            <Bar
-                id={id}
-                options={options}
-                data={data}
-            />
+            <Bar data={data} options={options} />
         </div>
-    )
-
+    );
 }

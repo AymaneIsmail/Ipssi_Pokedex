@@ -1,9 +1,4 @@
-import React, { ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
-
-type LayoutProps = {
-    children: ReactNode;
-};
 
 export function Layout() {
     return (
@@ -11,7 +6,7 @@ export function Layout() {
             {/* Navbar */}
             <nav className="bg-gray-800 text-white p-4">
                 <div className="container mx-auto flex justify-between items-center">
-                    <div className="text-xl font-bold">Mon Site</div>
+                    <div className="text-xl font-bold">Poké'Tap</div>
                     <ul className="flex space-x-4">
                         <li>
                             <a href="#" className="hover:text-gray-400">Accueil</a>

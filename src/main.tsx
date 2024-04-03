@@ -4,6 +4,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { Layout } from "./routes/Layout";
 import '@/globals.css'
 import { Index } from './routes/pokemon';
+import { Show } from './routes/pokemon/show';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -12,6 +13,11 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Index />,
+        
+      },
+      {
+        path: "/:id",
+        element: <Show />,
       },
     ]
   },
