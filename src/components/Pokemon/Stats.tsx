@@ -28,20 +28,21 @@ type StatComponentProps = {
 }
 
 export function Stat({ pokemonName }: StatComponentProps) {
-    return (
-        <StatContent pokemonName={pokemonName} />
-    );
-}
-
-function StatContent({ pokemonName }: StatComponentProps) {
     const { stats, setStats } = useStats();
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!stats[pokemonName]) {
+            loadData();
+        }
+    }, [pokemonName]);
+
     const loadData = async () => {
         try {
             setLoading(true);
             const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonName}/`);
             const data = await response.json();
-            setStats(data);
+            setStats(pokemonName, data);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -49,21 +50,14 @@ function StatContent({ pokemonName }: StatComponentProps) {
         }
     };
 
-    useEffect(() => {
-        if (!stats) {
-            loadData();
-        }
-    }, []);
-
-    if (loading) {
+    if (loading || !stats[pokemonName]) {
         return <div>Loading...</div>;
     }
 
-    if (!stats) {
-        return <div>Loading...</div>;
-    }
-    const statsValues = stats.stats.map((stat) => stat.base_stat);
-    const statsLabels = stats.stats.map((stat) => stat.stat.name);
+    const pokemonStats = stats[pokemonName].stats;
+    const statsValues = pokemonStats.map((stat) => stat.base_stat);
+    const statsLabels = pokemonStats.map((stat) => stat.stat.name);
+
     const data = {
         labels: statsLabels,
         datasets: [
@@ -81,7 +75,6 @@ function StatContent({ pokemonName }: StatComponentProps) {
         responsive: true,
         plugins: {
             legend: {
-                // position: 'top' as const,
                 display: false,
             },
             title: {
@@ -102,7 +95,7 @@ function StatContent({ pokemonName }: StatComponentProps) {
         },
         layout: {
             padding: {
-                top: 10, // Ajoute un espace au-dessus du graphique pour le titre
+                top: 10,
             }
         }
     };
