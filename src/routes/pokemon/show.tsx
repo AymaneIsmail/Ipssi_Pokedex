@@ -13,10 +13,12 @@ export function Show() {
         fetchPokemon();
     }, [id]);
 
+    console.log(pokemonStats)
+
     return (
         <>
             <section className=" flex items-start overflow-hidden">
-                <div className="card h-[250px] w-[250px]" style={{ backgroundImage: 'url(https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/1.png)' }}></div>
+                <div className="card h-[150px] w-[150px]" style={{ backgroundImage: `url(${pokemonStats && pokemonStats.sprites.front_default})` }}></div>
                 <h2 className="first-letter:uppercase text-black text-8xl tracking-widest">{pokemonStats && pokemonStats.name}</h2>
             </section>
         </>

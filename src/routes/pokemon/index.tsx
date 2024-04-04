@@ -4,73 +4,65 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseUrl } from "@/lib/utils";
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-type GetPokemon = {
-    name: string,
-    url: string,
-}
+import { getPokemons } from '../../utils/api';
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { GetPokemon } from "@/types/Pokemon";
 
 export function Index() {
-
-    const [pokemons, setPokemons] = useState<GetPokemon[]>([]);
-    const [offset, setOffset] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [offset, setOffset] = useState(0)
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredPokemons, setFilteredPokemons] = useState<GetPokemon[]>([]);
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=12&offset=${offset}`);
-            const data = await res.json();
-            setPokemons((prevPokemonsData) => {
-                const newPokemons = data.results.filter((newPokemon: GetPokemon) => !prevPokemonsData || !prevPokemonsData.some(prevPokemon => prevPokemon.name === newPokemon.name));
-                return prevPokemonsData ? [...prevPokemonsData, ...newPokemons] : newPokemons;
-            });
-
-            setFilteredPokemons((prevPokemonsData) => {
-                const newPokemons = data.results.filter((newPokemon: GetPokemon) => !prevPokemonsData || !prevPokemonsData.some(prevPokemon => prevPokemon.name === newPokemon.name));
-                return prevPokemonsData ? [...prevPokemonsData, ...newPokemons] : newPokemons;
-            });
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false)
-        }
-    };
+    const query = useQuery({
+        queryKey: ['pokemons', offset],
+        queryFn: () => getPokemons(offset),
+        placeholderData: keepPreviousData
+    });
 
     useEffect(() => {
-        fetchData();
-    }, [offset]);
-
-    const handleScroll = () => {
-        const scrollTop = (document.documentElement && document.documentElement.scrollTop) || document.body.scrollTop;
-        const scrollHeight = (document.documentElement && document.documentElement.scrollHeight) || document.body.scrollHeight;
-        const clientHeight = document.documentElement.clientHeight || window.innerHeight;
-        const scrolledToBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight;
-
-        if (scrolledToBottom) {
-            // Augmenter l'offset pour obtenir plus de données
-            setOffset((prevOffset) => prevOffset + 12);
+        if (query.isSuccess) {
+            setFilteredPokemons(prev => {
+                if (offset === 0) {
+                    return query.data.results;
+                } else {
+                    // Filtrer les nouveaux Pokémon pour supprimer les redondances
+                    const newPokemons = query.data.results.filter(newPokemon => !prev.some(prevPokemon => prevPokemon.name === newPokemon.name));
+                    return [...prev, ...newPokemons];
+                }
+            });
         }
-    };
+    }, [query.isSuccess, query.data, offset]);
 
-    useEffect(() => {
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    if (query.isError || !query.isSuccess) {
+        return (<div>
+            Error
+        </div>);
+    }
+
+    if (query.isLoading) {
+        return (<div>
+            Loading
+        </div>);
+    }
 
     const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
         const searchTerm = event.target.value.toLowerCase();
-        setSearchTerm(searchTerm);
-        // Filtrer les pokemons en utilisant le state pokemons
-        const filteredPokemons = pokemons.filter((pokemon) =>
+        setSearchTerm(searchTerm)
+
+        const filteredPokemons = query.data.results.filter((pokemon) =>
             pokemon.name.toLowerCase().includes(searchTerm)
         );
-        setFilteredPokemons(filteredPokemons);
+        if (filteredPokemons) {
+            setFilteredPokemons(filteredPokemons);
+        }
     };
+
+    const loadMorePokemons = () => {
+        setOffset((prevOffset) => prevOffset + 12)
+    }
 
     return (
         <>
@@ -84,7 +76,7 @@ export function Index() {
             </div>
             <StatProvider>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-11">
-                    {filteredPokemons.map((pokemon) => {
+                    {filteredPokemons && filteredPokemons.map((pokemon) => {
                         const imageUrl = parseUrl(pokemon.url);
                         const id = pokemon.url.split('/')[6]
                         return (
@@ -111,11 +103,13 @@ export function Index() {
                                 </CardFooter>
                             </Card>
                         );
-                    }
-                    )}
+                    })}
                 </div >
             </StatProvider>
-            {loading && <p>Loading...</p>}
+            {loading ? <p>Loading...</p> : 
+            <Button className="w-full mt-4" variant='default' onClick={loadMorePokemons}>
+                Charger plus de Pokemons
+            </Button>}
         </>
     )
 }
